@@ -127,3 +127,8 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# profiling data to be ignored
+runs/**/*.tfevents*
+runs/**/*.trace.json
+runs/**/*.pt.trace.json
