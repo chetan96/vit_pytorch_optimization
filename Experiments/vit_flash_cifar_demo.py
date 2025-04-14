@@ -8,10 +8,11 @@ import argparse
 from tqdm import tqdm
 
 from dataset.cifar import get_cifar_dataloaders
-from vit_pytorch.vit import ViT
+from vit_pytorch.simple_flash_attn_vit import SimpleViT
+
 
 def parse_args():
-    parser = argparse.ArgumentParser(description='ViT CIFAR-10 Training with Profiling')
+    parser = argparse.ArgumentParser(description='ViT CIFAR-10 flash attention Training with Profiling')
     
     parser.add_argument('--data-root', type=str, default='../data', help='Path to dataset directory (outside project)')
     
@@ -21,7 +22,7 @@ def parse_args():
     
     parser.add_argument('--patch-size', type=int, default=16, help='Size to resize images to (default: 16)')
     
-    parser.add_argument('--epochs', type=int, default=10)
+    parser.add_argument('--epochs', type=int, default=3)
     
     parser.add_argument('--no-profiler', action='store_false', dest='run_profiler', help='Disable GPU profiling (enabled by default)')
     
@@ -32,10 +33,10 @@ def parse_args():
 def setup_profiler_output_dir(args):
     # Create timestamped directory structure
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    base_dir = "profiler_results_vit"
+    base_dir = "profiler_results_flash_vit"
     
     # Create parameter-based subfolder name
-    experiment_name = f"ps{args.patch_size}_img{args.image_size}_ep{args.epochs}"
+    experiment_name = f"ps{args.patch_size}_img{args.image_size}"
     output_dir = os.path.join(base_dir, experiment_name, timestamp)
     
     # Ensure directories exist
@@ -68,15 +69,16 @@ def train_test_model():
     )
     
     # Initialize model
-    model = ViT(
+    model = SimpleViT(
         image_size=args.image_size,
         patch_size=args.patch_size,
         num_classes=10,
         dim=128,
         depth=6,
         heads=8,
+        mlp_dim=256,
         channels = 3,
-        mlp_dim=256
+        use_flash = True
     ).to(device)
     
     criterion = nn.CrossEntropyLoss()

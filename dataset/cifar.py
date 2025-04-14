@@ -3,7 +3,7 @@ from torchvision import datasets, transforms
 from torch.utils.data import DataLoader, random_split
 import os
 
-def get_cifar_dataloaders(data_root='../data', batch_size=32, val_ratio=0.1):
+def get_cifar_dataloaders(data_root='../data', batch_size=32, val_ratio=0.1, img_size=64):
     """
     Args:
         data_root: Path to directory where CIFAR-10 will be downloaded/stored
@@ -14,6 +14,7 @@ def get_cifar_dataloaders(data_root='../data', batch_size=32, val_ratio=0.1):
     os.makedirs(data_root, exist_ok=True)
     
     transform = transforms.Compose([
+        transforms.Resize(img_size),
         transforms.ToTensor(),
         transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2470, 0.2435, 0.2616)) #Cifar-10 standar normalization values
     ])

@@ -53,7 +53,7 @@ class Attention(nn.Module):
         qkv = self.to_qkv(x).chunk(3, dim = -1)
         q, k, v = map(lambda t: rearrange(t, 'b n (h d) -> b h n d', h = self.heads), qkv)
 
-        dots = torch.matmul(q, k.transpose(-1, -2)) * self.scale
+        dots = torch.matmul(q, k.transpose(-1, -2)) * self.scale  # k.transpose(-1, -2): transpose the last 2 dims(-1: last, -2:second to last) of k: [batch, heads, seq_length, dim_head]
 
         attn = self.attend(dots)
         attn = self.dropout(attn)
@@ -81,7 +81,7 @@ class Transformer(nn.Module):
         return self.norm(x)
 
 class ViT(nn.Module):
-    def __init__(self, *, image_size, patch_size, num_classes, dim, depth, heads, mlp_dim, pool = 'cls', channels = 3, dim_head = 64, dropout = 0., emb_dropout = 0.):
+    def __init__(self, *, image_size, patch_size, num_classes, dim, depth, heads, mlp_dim, pool = 'cls', channels = 3, dim_head = 64, dropout = 0., emb_dropout = 0.): # the '*' enforces keyword only arguments, all params after * must be passed explicitly by name
         super().__init__()
         image_height, image_width = pair(image_size)
         patch_height, patch_width = pair(patch_size)
@@ -112,7 +112,7 @@ class ViT(nn.Module):
 
     def forward(self, img):
         x = self.to_patch_embedding(img)
-        b, n, _ = x.shape
+        b, n, _ = x.shape  # [batch, num_patches, dim]
 
         cls_tokens = repeat(self.cls_token, '1 1 d -> b 1 d', b = b)
         x = torch.cat((cls_tokens, x), dim=1)
@@ -125,3 +125,24 @@ class ViT(nn.Module):
 
         x = self.to_latent(x)
         return self.mlp_head(x)
+
+
+"""
+FAQ:
+Q1. Why need a cls tokens per image?
+They capture global context of the patches, acts like a 'smart summary' of the image, where patches are like a pixel. Learnable parameter. 
+
+Q2. What is the use of line : x = x.mean(dim = 1) if self.pool == 'mean' else x[:, 0] ?
+If pool is cls, then x[:, 0] extracts [CLS] for classification.
+
+
+Q3. Why we need self.to_latent()/identity?
+It is a flexible placeholder for post-processing. 
+
+Q4 How does parallelism work?
+All patches are prcoessed simultanously in the transformer module instead of sequence by sequence.
+
+Q5 If patches are processed simulatenously, how is information processed across patches?
+Via attention mechanism : Q_CLS x K_Patches
+
+"""
